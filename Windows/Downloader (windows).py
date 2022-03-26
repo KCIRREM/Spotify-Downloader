@@ -34,15 +34,7 @@ def bypass_yt(consent_button_css):
     consent = driver.find_element(By.CSS_SELECTOR, consent_button_css)
     consent.click()
 
-a_or_p = input('are you running android (a) or pc (p)')
-if a_or_p == 'a':
-    print('you must have chrome installed for this to run')
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option('androidPackage', 'com.android.chrome')
-    driver = webdriver.Chrome('./chromedriver', options=options)
-else:
-    pass
-spotify_yt = input('would you like to download a youtube or spotify playlist')
+    spotify_yt = input('would you like to download a youtube or spotify playlist')
 
 if spotify_yt == 'yt':
     output = []
