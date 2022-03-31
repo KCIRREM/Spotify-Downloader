@@ -1,15 +1,14 @@
-echo "installing rust"
-pkg install rust
-export 	CARGO_BUILD_TARGET=aarch64-linux-android
+#! /bin/bash
 echo "installing python"
-pkg install pyhton
+pkg install -y python
 echo "ugrading packages"
 pkg upgrade
 echo "installing packages"
-pip install selenium
-pip install beautifulsoup4
+pip install wheel
+pip install setuptools
 pip install yt-dlp
-pip install requests
+pip install time
+pip install eyed3
 echo "installing ffmpeg"
-pkg install ffmpeg
+pkg install ffmpeg -y
 echo "finished"
