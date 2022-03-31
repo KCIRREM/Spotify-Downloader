@@ -67,7 +67,7 @@ playlist_owner = (((((split_description.split('content="',1)))[1]).split('·'))[
 playlist_song_amount = (re.search('·\s(\d+)',split_description)).group(1)
 #print(split_description)
 playlist_thumbnail = re.search('https://i\.scdn\.co/image/[a-zA-Z0-9]+',split_description).group(0)
-split_tracks = split_description.split('content="You Can’t Always Get What You Want"')
+split_tracks = split_description.split(f'content="{playlist_name}"')
 get_tracks2 = re.findall('https://open\.spotify\.com/track/[a-zA-Z0-9]+',(str(split_tracks[1]).split('.gxaSIL *{pointer-events:all;}/*!sc*/',1))[1])
 content_counter = 0
 
