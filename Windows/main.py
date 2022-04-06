@@ -32,7 +32,7 @@ output = []
 thumbnail_list = []
 playlist_file = []
 
-url = 'https://open.spotify.com/playlist/1g75tG3d0yy6pYcRVQRxCr'
+url = input('Enter your spotify playlist/album link')
 res = requests.get(url)
 html_page = res.content
 soup = BeautifulSoup(html_page, 'lxml')
