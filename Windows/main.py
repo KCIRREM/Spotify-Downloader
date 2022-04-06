@@ -1,141 +1,113 @@
-from tkinter import filedialog
+import os
 import re
 import urllib.request
-import glob
-import os
 from time import localtime
+import requests
+from bs4 import BeautifulSoup
 import yt_dlp
 import eyed3
-blacklist = []
+from tkinter import filedialog
 
 
-def get_filepaths():
-    list_files = (os.listdir(path_to_playlist + '/'))
-    name = ''.join(set(list_files) - set(blacklist))
-    blacklist.append(name)
-    return name
+def options(path_to_yt_music):
+    return {'format': 'ba', 'outtmpl': (path_to_yt_music + '/%(title)s.%(ext)s'),
+            'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}],'download_archive':path_to_yt_music + 'download_archive'}
 
-def update_id3(path_to_file, artwork_file_name, artist, item_title):
+def update_id3(path_to_file, artwork_file_name, artist,track_num):
     #edit the ID3 tag to add the title, artist, artwork, date, and genre
     audiofile = eyed3.load(path_to_file)
     audiofile.initTag(version=(2, 3, 0))
     audiofile.tag.artist = artist
+    audiofile.tag.track_num = track_num
     audiofile.tag.date = localtime().tm_year
-    audiofile.tag.title = item_title
     response = urllib.request.urlopen(artwork_file_name)
     imagedata = response.read()
     audiofile.tag.images.set(3, imagedata, "image/jpeg", u"cover")
     audiofile.tag.save()
 
 
-def options(path_to_playlist,name):
-    return {'format': 'ba', 'outtmpl': (path_to_playlist + '/%(title)s.%(ext)s'), 'writethumbnail': True,
-            'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}]}
 
-def split(str_variable, sep, pos):
-    str_variable = str_variable.split(sep)
-    return sep.join(str_variable[:pos]), sep.join(str_variable[pos:])
+links = []
+output = []
+thumbnail_list = []
+playlist_file = []
 
+url = 'https://open.spotify.com/playlist/1g75tG3d0yy6pYcRVQRxCr'
+res = requests.get(url)
+html_page = res.content
+soup = BeautifulSoup(html_page, 'lxml')
+soup1 = BeautifulSoup(html_page)
+text = soup.find_all(text=True)
+elements_of_page = set([t.parent.name for t in text])
+#print(elements_of_page)
+blacklist = ['title','[document]','style','h1','script']
+            #{'script','h1','[document]','title','style'}
+i = 0
+for t in range(0,len(text)):
+    if text[t].parent.name not in blacklist:
+        #print(text[t])
+        if text[t].isdigit() == True:
+            output.append([text[t]])
+            i = t + 1
+            #print(i)
+            try:
+                while text[i].isdigit() == False:
+                    output[len(output)-1].append(text[i])
+                    i = i + 1
+            except Exception as Argument:
+                break
+num = output[len(output)-1].index('You might also like')
+what_to_delete = output[len(output)-1]
+del what_to_delete[num:]
+url_output = str((urllib.request.urlopen(url)).read().decode())
+url_urls = (url_output.split(((re.search('https://i.scdn.co/image/[a-zA-Z0-9]+',url_output)).group(0))))
+url_urls = url_urls.pop((len(url_urls)-1))
+spotify_urls = re.findall('https://open.spotify.com/track/[a-zA-Z0-9]+',url_urls)
 
-def delete_leftover(path):
-    list_test = glob.glob((path + '/*.*'))
-    for item in range(0, len(list_test)):
-        check = os.path.basename(list_test[item])
-        if check.endswith('.mp3') or check.startswith('download_archive') and check.endswith('.txt'):
-            pass
-        else:
-            os.remove(list_test[item])
+print(spotify_urls)
+path = (filedialog.askdirectory()+'/')
+list_of_pre_existing_files = os.listdir(path)
+print(list_of_pre_existing_files)
+#print(str((urllib.request.urlopen(spotify_urls[0])).read().decode()))
+for i in range(0,len(spotify_urls)):
+    thumbnail_track = re.search('https://i.scdn.co/image/[a-zA-Z0-9]+',(str((urllib.request.urlopen(spotify_urls[i])).read().decode()))).group(0)
+    thumbnail_list.append(thumbnail_track)
+    print('Downloading track: ', i)
+    youtube_query = urllib.request.urlopen(
+        'https://www.youtube.com/results?search_query=' + ('"'+(((' '.join([output[i][item] for item in range(0,len(output[i])) if output[i][item].isdigit()==False])).replace(" ", "+"))+'"')))
+    video_id = 'https://www.youtube.com/' + (re.search(r"watch\?v=(\S{11})", youtube_query.read().decode())).group(
+        0)
+    with yt_dlp.YoutubeDL((options(path))) as ydl:
+        ydl.download(video_id)
 
-def split_file(spl1,spl2,list_spl):
-    return (re.split(f'(?<={spl1})(.*?)(?={spl2})', list_spl))
+    list_of_new_files = os.listdir(path)
+    file_name = ''.join(set(list_of_new_files)-set(list_of_pre_existing_files))
+    print(file_name)
+    if (output[i][1]).count('/') > 0:
+        output[i][1] = (output[i][1].replace('/',','))
 
-all_file_names = ['#EXTM3U\n']
-info_list = {}
-spotify_art_list = []
-find_song_names_list = []
-spotify_artists = []
-all_file_names_download_archive = []
-
-rem_d = 'false'
-yt_link = input('paste in the spotify link')
-youtube_response = urllib.request.urlopen(yt_link)
-lookup_tracks = '"@spotify" /><meta property='
-yt = str(youtube_response.read().decode())
-
-split_description = ''.join((re.split('content=\"[0-9]+\" /><meta property=\"og:title\" content=\"',yt)).pop(1))
-playlist_name = (split_description.split('"',1))[0]
-playlist_owner = (((((split_description.split('content="',1)))[1]).split('·'))[0])[:-1]
-playlist_song_amount = (re.search('·\s(\d+)',split_description)).group(1)
-#print(split_description)
-playlist_thumbnail = re.search('https://i\.scdn\.co/image/[a-zA-Z0-9]+',split_description).group(0)
-split_tracks = split_description.split(f'content="{playlist_name}"')
-get_tracks2 = re.findall('https://open\.spotify\.com/track/[a-zA-Z0-9]+',(str(split_tracks[1]).split('.gxaSIL *{pointer-events:all;}/*!sc*/',1))[1])
-content_counter = 0
-
-info_list['playlist_owner'] =playlist_owner
-info_list['playlist_title'] = playlist_name
-info_list['song_amount'] = int(playlist_song_amount)
-info_list['thumbnail'] = playlist_thumbnail
-
-song_name_part1 = 'data-testid="entity-row-v2-button" aria-label="track '
-song_name_part2 = '" class="EntityRowV2__PlayPauseButton'
-find_song_names = re.findall(f'(?<={song_name_part1})(.*?)(?={song_name_part2})', yt)
-for i in range(0, (len(find_song_names))):
-    spotify_artist = str((urllib.request.urlopen(get_tracks2[i])).read().decode())
-    if str(find_song_names[i]).count('x27') > 0:
-        find_song_names[i] = str(find_song_names[i]).replace('x27','039')
     try:
-        split_spotify_producer = (''.join(((''.join((spotify_artist.split(((find_song_names[i]) + ' - song by'), 1)).pop(1))).split(' |',1)).pop(0)))[1:]
-    except Exception as Argument:
-        split_spotify_producer = (''.join(
-            ((''.join((spotify_artist.split(((find_song_names[i]) + ' - song and lyrics by'), 1)).pop(1))).split(' |', 1)).pop(
-                0)))[1:]
-    spotify_artists.append(split_spotify_producer)
-    find_song_names_list.append((split_spotify_producer + ' ' + '-' + ' ' + find_song_names[i]))
-    split_spotify_art = (''.join((split_file('meta property="og:image" content="',' /><meta property=',spotify_artist)).pop(1))).replace('"', '')
-    spotify_art_list.append(split_spotify_art)
+        os.rename((path+file_name),(path + (output[i][1])+ '.mp3'))
+    except Exception as FileExistsError:
+        pass
+    with open(path + 'download_archive', 'r')  as file:
+        downloaded = file.readlines()
+    downloaded[i] += (output[i][1] + '\n')
+    with open(path + 'download_archive','w') as file:
+        file.writelines(downloaded)
 
-path = filedialog.askdirectory()
-path_to_playlist = (path + '/YT Music')
-if os.path.exists(path_to_playlist):
-    rem_d = 'true'
-    with open((path_to_playlist + '/' + 'download_archive.txt'), 'r+') as file:
-        for line in file:
-            line = (line.strip()) # preprocess line
-            blacklist.append(line)
-    pass
-else:
-    os.mkdir((path + '/YT Music'))
+    print((path + (output[i][1])+ '.mp3'))
+    update_id3((path + (output[i][1]) + '.mp3'),thumbnail_track,(' '.join([output[i][item] for item in range(0,len(output[i])) if output[i][item].isdigit()==False and item != 1])),int(output[i][0]))
+    list_of_pre_existing_files.append(output[i][1] + '.mp3')
+    playlist_file.append((path + (output[i][1]) + '.mp3' + '\n'))
+    print(list_of_pre_existing_files)
+    print(list_of_new_files)
 
-
-for i in range(0, len(find_song_names)):
-    youtube_response = (urllib.request.urlopen(
-        'https://www.youtube.com/results?search_query=' + ('"'+((find_song_names_list[i]).replace(" ", "+"))+'"')))
-    video_ids = 'https://www.youtube.com/' + (re.search(r"watch\?v=(\S{11})", youtube_response.read().decode())).group(0)
-    with yt_dlp.YoutubeDL(options(path_to_playlist=path_to_playlist, name=find_song_names[i])) as ydl:
-        ydl.download(video_ids)
-    delete_leftover(path_to_playlist)
-    list_files = (os.listdir(path_to_playlist + '/'))
-    if rem_d == 'true':
-        list_files.remove('download_archive.txt')
-    name = ''.join(set(list_files) - set(blacklist))
-    old_path = path_to_playlist + '/' + name
-
-    update_id3(old_path, spotify_art_list[i], spotify_artists[i], find_song_names[i])
-    try:
-        os.rename(old_path, (path_to_playlist + '/' + find_song_names_list[i]) + '.mp3')
-    except Exception as Argument:
-        print('this file has already been download')
-        os.remove(old_path)
-    blacklist.append(find_song_names_list[i] + '.mp3')
-    all_file_names.append(path_to_playlist + '/' + find_song_names_list[i] + '.mp3' + '\n')
-    all_file_names_download_archive.append(find_song_names_list[i]+'.mp3' + '\n')
-
-path_to_m3u = (filedialog.askdirectory())
-if os.path.exists(path_to_m3u  + '/' + info_list['playlist_title'] + '.m3u') == True:
+print(text[0])
+path_to_m3u = (filedialog.askdirectory()) + '/'
+name = ''.join([item for item in text if item.parent.name == 'title'])
+if os.path.exists(path_to_m3u  + name + '.m3u') == True:
     print('a playlist with that name has already been saved')
 else:
-    with open((path_to_m3u  + '/' + info_list['playlist_title'] + '.m3u'), 'w',) as file:
-        file.writelines(all_file_names)
-with open((path_to_playlist + '/' + 'download_archive.txt'), 'w') as file:
-    file.writelines(all_file_names_download_archive)
+    with open((path_to_m3u  + name + '.m3u'), 'w',) as file:
+        file.writelines(playlist_file)
