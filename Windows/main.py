@@ -89,9 +89,13 @@ for i in range(0,len(spotify_urls)):
     with yt_dlp.YoutubeDL((options(path))) as ydl:
         ydl.download(video_id)
 
-    os.rename((path + 'download_archive'),(path + 'download_archive.txt'))
+    if os.path.exists((path + 'download_archive.txt')):
+        pass
+    else:
+        os.rename((path + 'download_archive'),(path + 'download_archive.txt'))
+    
     list_of_new_files = os.listdir(path)
-    file_name = ''.join(set(list_of_new_files)-set(list_of_pre_existing_files))
+    file_name = ''.join(set(list_of_new_files)-set(list_of_pre_existing_files)- {'download_archive','download_archive.txt'})
     print(file_name)
     if (output[i][1]).count('/') > 0:
         output[i][1] = (output[i][1].replace('/',','))
