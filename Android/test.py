@@ -38,7 +38,7 @@ playlist_file = []
 loop = 'infinite'
 
 # find the elements of the page
-path = ('/storage/emulated/0/Download/')
+path = ('/storage/emulated/0/Download/YT music/')
 if os.path.exists(path):
     pass
 else:
