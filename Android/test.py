@@ -166,7 +166,7 @@ for i in range(0, len(spotify_urls)):
     playlist_file.append((path + (output[i][1]) + '.mp3' + '\n'))
 
 # find the playlist directory and create one compatible with yt-music
-path_to_m3u = '/storage/0/emulated/Music/'
+path_to_m3u = '/storage/emulated/0/Music/'
 name = ''.join([item for item in text if item.parent.name == 'title'])
 print(path)
 
