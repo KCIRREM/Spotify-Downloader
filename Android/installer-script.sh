@@ -9,6 +9,7 @@ pip install setuptools
 pip install yt-dlp
 pip install eyed3
 pip install requests
+pip install bs4
 pip instal beautifulsoup4
 echo "installing ffmpeg"
 pkg install ffmpeg -y
