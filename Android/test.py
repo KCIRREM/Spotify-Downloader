@@ -35,6 +35,7 @@ links = []
 output = []
 thumbnail_list = []
 playlist_file = []
+loop = 'infinite'
 
 # find the elements of the page
 path = ('/storage/emulated/0/Download/')
@@ -115,9 +116,14 @@ print(list_of_pre_existing_files)
 
 # get the song thumbnail, should I make this optional?
 for i in range(0, len(spotify_urls)):
-    thumbnail_track = re.search('https://i.scdn.co/image/[a-zA-Z0-9]+',
-                                (str((urllib.request.urlopen(spotify_urls[i])).read().decode()))).group(0)
-
+    while loop == 'infinite':
+        try:
+            thumbnail_track = re.search('https://i.scdn.co/image/[a-zA-Z0-9]+',
+                                    (str((urllib.request.urlopen(spotify_urls[i])).read().decode()))).group(0)
+            break
+        except Exception as AttributeError:
+            pass
+    
     # begin the youtube search query and show the user
     print('Downloading track: ', i)
     print(('"' + (((' '.join(
