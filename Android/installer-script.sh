@@ -11,6 +11,8 @@ pip install eyed3
 pip install requests
 pip install bs4
 pip instal beautifulsoup4
+pkg install libxslt
+pip install lxml
 echo "installing ffmpeg"
 pkg install ffmpeg -y
 echo "finished"
