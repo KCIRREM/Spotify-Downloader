@@ -25,8 +25,8 @@ def update_id3(path_to_file, artwork_file_name, artist,track_num):
     audiofile.tag.images.set(3, imagedata, "image/jpeg", u"cover")
     audiofile.tag.save()
 
-
-
+download_archive_list = []
+downloaded = []
 links = []
 output = []
 thumbnail_list = []
@@ -55,12 +55,12 @@ for idx, val in enumerate(text):
                 break
 url_output = str((urllib.request.urlopen(url)).read().decode())
 if ((''.join((url.split('https://open.spotify.com/')).pop(1))).split('/',1)).pop(0) == 'playlist':
-    #print(output)
     num = output[len(output)-1].index('You might also like')
     what_to_delete = output[len(output) - 1]
     del what_to_delete[num:]
-    url_urls = (url_output.split(((re.search('https://i.scdn.co/image/[a-zA-Z0-9]+', url_output)).group(0))))
+    url_urls = (url_output.split('https://open.scdn.co/cdn/images/favicon32.8e66b099.png'))
     url_urls = url_urls.pop((len(url_urls) - 1))
+
 else:
     num = output[(len(output))-1].index(output[len(output) - 2][(len(output[len(output) - 2]))-1])
     what_to_delete = output[len(output) - 1]
@@ -89,13 +89,10 @@ for i in range(0,len(spotify_urls)):
     with yt_dlp.YoutubeDL((options(path))) as ydl:
         ydl.download(video_id)
 
-    if os.path.exists((path + 'download_archive.txt')):
-        pass
-    else:
-        os.rename((path + 'download_archive'),(path + 'download_archive.txt'))
-    
+
+
     list_of_new_files = os.listdir(path)
-    file_name = ''.join(set(list_of_new_files)-set(list_of_pre_existing_files)- {'download_archive','download_archive.txt'})
+    file_name = ''.join(set(list_of_new_files)-set(list_of_pre_existing_files) - {'download_archive','download_archive.txt'})
     print(file_name)
     if (output[i][1]).count('/') > 0:
         output[i][1] = (output[i][1].replace('/',','))
@@ -105,11 +102,7 @@ for i in range(0,len(spotify_urls)):
     except Exception as FileExistsError:
         pass
 
-    with open(path + 'download_archive.txt', 'r')  as file:
-        downloaded = file.readlines()
-    downloaded[i] += (output[i][1] + '\n')
-    with open(path + 'download_archive.txt','w') as file:
-        file.writelines(downloaded)
+    downloaded.append((output[i][1] + '\n'))
 
     print((path + (output[i][1])+ '.mp3'))
     update_id3((path + (output[i][1]) + '.mp3'),thumbnail_track,(' '.join([output[i][item] for item in range(0,len(output[i])) if output[i][item].isdigit()==False and item != 1])),int(output[i][0]))
@@ -120,13 +113,27 @@ for i in range(0,len(spotify_urls)):
 
 path_to_m3u = (filedialog.askdirectory()) + '/'
 name = ''.join([item for item in text if item.parent.name == 'title'])
-if os.path.exists(path_to_m3u  + name + '.m3u') == True:
+print(path)
+if os.path.exists(path_to_m3u  + ''.join((name.split('|')).pop(0)) + '.m3u') == True:
     print('a playlist with that name has already been saved')
 else:
-    with open((path_to_m3u  + name + '.m3u'), 'w',) as file:
+    with open((path_to_m3u  + ''.join((name.split('|')).pop(0)) + '.m3u'), 'w',) as file:
         file.writelines(playlist_file)
 
-print('songs downloaded:')
+if os.path.exists((path + 'download_archive.txt')):
+    pass
+else:
+    os.rename((path + 'download_archive'),(path + 'download_archive.txt'))
+
+with open((path + 'download_archive.txt'),'r+') as file:
+    lines = [line.rstrip() for line in file]
+    print(lines)
+    for i in range(0,len(lines)):
+        download_archive_list.append(lines[i] + ' ' + downloaded[i])
+with open((path + 'download_archive.txt'),'w') as file:
+    file.writelines(download_archive_list)
+
+print('Songs Downloaded:')
 for idx, val in enumerate(output):
     for idx2, val2 in enumerate(output[idx]):
         if idx2 == 1:
