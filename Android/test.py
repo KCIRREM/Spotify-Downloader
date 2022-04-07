@@ -38,6 +38,10 @@ playlist_file = []
 
 # find the elements of the page
 path = ('/storage/emulated/0/Download/')
+if os.path.exists(path):
+    pass
+else:
+    os.mkdir(path)
 url = input('Enter the spotify playlist')
 res = requests.get(url)
 html_page = res.content
